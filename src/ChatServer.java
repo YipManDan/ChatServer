@@ -26,8 +26,7 @@ public class ChatServer {
             System.out.println("Web Server running on Inet Address " + serverSocket.getInetAddress()
                     + " port " + serverSocket.getLocalPort());
             
-            System.out.println("Working Directory: \""
-                + System.getProperty("user.dir").replace('\\', '/') + "\"");
+            //System.out.println("Working Directory: \"" + System.getProperty("user.dir").replace('\\', '/') + "\"");
 
             //Server infinite loop and wait for clients to connect
             while (true) {
@@ -54,13 +53,12 @@ public class ChatServer {
        System.out.print(message);
 
        // we loop in reverse order in case we would have to remove a Client
-       // because it has disconnected
        for(int i = list.size(); i >= 0; --i) {
             ClientThread ct = list.get(i);
             // try to write to the Client if it fails remove it from the list
             if(!ct.writeMsg(message)) {
                 list.remove(i);
-                System.out.print("Disconnected Client " + ct.username + " removed from list.");
+                System.out.print("Disconnected Client: " + ct.username + " removed from list");
             }
        }
     }
@@ -91,6 +89,8 @@ public class ChatServer {
         cs.start();
     }
  
+    
+    //Class to handle the clients
     class ClientThread extends Thread {
         Socket socket;
         ObjectInputStream in;
@@ -109,15 +109,15 @@ public class ChatServer {
             id = ++uniqueID;
             this.socket = socket;
 
-            /* Creating both Data Stream */
-            System.out.println("Thread trying to create Object Input/Output Streams");
+            //Create both Data Stream
             try {
-                // create output first
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in  = new ObjectInputStream(socket.getInputStream());
+                
                 // read the username
                 username = (String) in.readObject();
-                System.out.println(username + " just connected.");
+                System.out.println(username + " has connected");
+                
             } catch (IOException e) {
                 System.out.println("Exception creating new Input/output Streams: " + e);
                 return;
@@ -129,8 +129,8 @@ public class ChatServer {
         @Override
         public void run() {
             //Keep running until LOGOUT
-            boolean keepGoing = true;
-            while(keepGoing) {
+            boolean loggedIn = true;
+            while(loggedIn) {
                 // read a String (which is an object)
                 try {
                     cm = (ChatMessage) in.readObject();
@@ -151,7 +151,7 @@ public class ChatServer {
                     break;
                 case ChatMessage.LOGOUT:
                     System.out.println(username + " disconnected with a LOGOUT message.");
-                    keepGoing = false;
+                    loggedIn = false;
                     break;
                 case ChatMessage.WHOISIN:
                     writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
@@ -164,8 +164,7 @@ public class ChatServer {
                 }
             }
             
-            // remove myself from the arrayList containing the list of the
-            // connected Clients
+            //Remove self from the arrayList containing the list of connected Clients
             remove(id);
             close();
         }
