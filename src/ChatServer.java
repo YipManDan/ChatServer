@@ -57,6 +57,19 @@ public class ChatServer {
             System.out.println(e);
         }
     }
+
+    public void stop()
+    {
+        //keepGoing = false;
+        try
+        {
+            new Socket("localhost", port);
+        }
+        catch (Exception e)
+        {
+            //cry
+        }
+    }
     
     //Broadcast a message to all Clients
     private synchronized void broadcast(String message) {
