@@ -6,6 +6,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.text.SimpleDateFormat;
+/**
+ * Source: http://www.dreamincode.net/forums/topic/259777-a-simple-chat-program-with-clientserver-gui-optional/
+ */
 
 public class ChatServer {
     private static int uniqueID;

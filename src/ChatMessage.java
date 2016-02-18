@@ -7,6 +7,10 @@
 
 import java.io.*;
 
+/**
+ * Source: http://www.dreamincode.net/forums/topic/259777-a-simple-chat-program-with-clientserver-gui-optional/
+ */
+
 public class ChatMessage implements Serializable {
 
     protected static final long serialVersionUID = 1112122200L;
