@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
 /**
@@ -80,13 +81,59 @@ public class ServerGUI extends JFrame implements ActionListener, WindowListener{
         int port;
         try {
             port = Integer.parseInt(tPortNumber.getText().trim());
-        }
-        catch (Exception er)
-        {
+        } catch (Exception er) {
             appendEvent("Invalid port number");
             return;
         }
         //create a new server
-        
+        server = new ChatServer(port, this);
+        new ServerRunning().start();
+        stopStart.setText("Stop");
+        tPortNumber.setEditable(false);
     }
+
+    //starting the server
+    public static void main(String[] arg)
+    {
+        //default port 8080
+        new ServerGUI(8080);
+    }
+
+    /**
+     * If user clicks X button while connection active, the connection needs to be closed to free the port
+     */
+    public void windowClosing(WindowEvent e)
+    {
+        //check to see if server exists
+        if(server != null) {
+            try {
+                server.stop();
+            } catch (Exception eClose) {
+            }
+            server = null;
+        }
+        dispose();
+        System.exit(0);
+    }
+
+    public void windowClosed(WindowEvent e) {}
+    public void windowOpened(WindowEvent e) {}
+    public void windowIconified(WindowEvent e) {}
+    public void windowDeiconified(WindowEvent e){}
+    public void windowActivated(WindowEvent e) {}
+    public void windowDeactivated(WindowEvent e) {}
+
+    class ServerRunning extends Thread
+    {
+        public void run()
+        {
+            server.start();
+            //start should continue until server fails
+            stopStart.setText("Start");
+            tPortNumber.setEditable(true);
+            appendEvent("Server Crashed\n");
+            server = null;
+        }
+    }
+
 }
