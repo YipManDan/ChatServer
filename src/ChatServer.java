@@ -15,6 +15,37 @@ public class ChatServer {
     private static ArrayList<ClientThread> list; //Keep track of clients
     private SimpleDateFormat sdf;
     
+    public ChatServer(int port) {
+         this.port = port;
+    }
+    
+    public void start() {
+        try {
+            serverSocket = new ServerSocket(port); //Start listening on port
+            
+            System.out.println("Web Server running on Inet Address " + serverSocket.getInetAddress()
+                    + " port " + serverSocket.getLocalPort());
+            
+            System.out.println("Working Directory: \""
+                + System.getProperty("user.dir").replace('\\', '/') + "\"");
+
+            //Server infinite loop and wait for clients to connect
+            while (true) {
+                
+                Socket socket = serverSocket.accept(); //accept client connection
+                System.out.println("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
+                
+                //Create a new thread and handle the connection
+                ClientThread ct = new ClientThread(socket);
+                list.add(ct); //Save client to ArrayList
+                ct.start();
+            }
+            
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    
     //Broadcast a message to all Clients
     private synchronized void broadcast(String message) {
        String time = sdf.format(new Date());
@@ -45,7 +76,7 @@ public class ChatServer {
         }
     }
         
-    public void main(String[] args) {
+    public static void main(String[] args) {
         //Read in port from command line
         //default to port 8080 if there's a parsing error
         try {
@@ -55,31 +86,9 @@ public class ChatServer {
             System.out.println("Error parsing port number; " +
                     "using port number 8080\n");
         }
-        
-        try {
-            serverSocket = new ServerSocket(port); //Start listening on port
-            
-            System.out.println("Web Server running on Inet Address " + serverSocket.getInetAddress()
-                    + " port " + serverSocket.getLocalPort());
-            
-            System.out.println("Working Directory: \""
-                + System.getProperty("user.dir").replace('\\', '/') + "\"");
-
-            //Server infinite loop and wait for clients to connect
-            while (true) {
-                
-                Socket socket = serverSocket.accept(); //accept client connection
-                System.out.println("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
-                
-                //Create a new thread and handle the connection
-                ClientThread ct = new ClientThread(socket);
-                list.add(ct); //Save client to ArrayList
-                ct.start();
-            }
-            
-        } catch (Exception e) {
-            System.out.println(e);
-        }
+         
+        ChatServer cs = new ChatServer(port);
+        cs.start();
     }
  
     class ClientThread extends Thread {
