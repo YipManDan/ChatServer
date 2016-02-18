@@ -1,0 +1,203 @@
+/*
+ * COEN 317 Project
+ */
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.text.SimpleDateFormat;
+
+public class ChatServer {
+    private static int uniqueID;
+    private static ServerSocket serverSocket;
+    private static int port = 8080;
+   
+    private static ArrayList<ClientThread> list; //Keep track of clients
+    private SimpleDateFormat sdf;
+    
+    //broadcast a message to all Clients
+    private synchronized void broadcast(String message) {
+       // add HH:mm:ss and \n to the message
+       String time = sdf.format(new Date());
+       
+       message = time + " " + message + "\n";
+       System.out.print(message);
+
+       // we loop in reverse order in case we would have to remove a Client
+       // because it has disconnected
+       for(int i = list.size(); i >= 0; --i) {
+               ClientThread ct = list.get(i);
+               // try to write to the Client if it fails remove it from the list
+               if(!ct.writeMsg(message)) {
+                    list.remove(i);
+                    System.out.print("Disconnected Client " + ct.username + " removed from list.");
+               }
+       }
+    }
+
+    // for a client who logoff using the LOGOUT message
+    synchronized void remove(int id) {
+        // scan the array list until we found the Id
+        for(int i = 0; i < list.size(); ++i) {
+            if(list.get(i).id == id) {
+                list.remove(i);
+                return;
+            }
+        }
+    }
+        
+    public void main(String[] args) {
+        //Read in port from command line
+        //default to port 8080 if there's a parsing error
+        try {
+            port = Integer.parseInt(args[0]);
+            System.out.println("Port number set to " + port + "\n");
+
+        } catch (Exception e) {
+            System.out.println("Error parsing port number; " +
+                    "using port number 8080\n");
+        }
+        
+        try {
+            serverSocket = new ServerSocket(port); //Start listening on port
+            
+            System.out.println("Web Server running on Inet Address " + serverSocket.getInetAddress()
+                    + " port " + serverSocket.getLocalPort());
+            
+            System.out.println("Working Directory: \""
+                + System.getProperty("user.dir").replace('\\', '/') + "\"");
+
+            //Server infinite loop and wait for client(s) to connect
+            while (true) {
+                
+                Socket socket = serverSocket.accept(); //accept client connection
+                System.out.println("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
+                
+                //Create a new thread and handle the connection
+                ClientThread ct = new ClientThread(socket);
+                list.add(ct); // save it in the ArrayList
+                ct.start();
+            }
+            
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+ 
+    class ClientThread extends Thread {
+        Socket socket;
+        ObjectInputStream sInput;
+        ObjectOutputStream sOutput;
+        
+        int id; //Unique ID (easier for deconnection)
+        String username; //Client username
+        
+        //Chat Message
+        ChatMessage cm;
+        String date;
+
+        // Constructore
+        ClientThread(Socket socket) {
+            // a unique id
+            id = ++uniqueID;
+            this.socket = socket;
+
+            /* Creating both Data Stream */
+            System.out.println("Thread trying to create Object Input/Output Streams");
+            try {
+                    // create output first
+                    sOutput = new ObjectOutputStream(socket.getOutputStream());
+                    sInput  = new ObjectInputStream(socket.getInputStream());
+                    // read the username
+                    username = (String) sInput.readObject();
+                    System.out.println(username + " just connected.");
+            } catch (IOException e) {
+                    System.out.println("Exception creating new Input/output Streams: " + e);
+                    return;
+            } catch (ClassNotFoundException e) {}
+
+            date = new Date().toString() + "\n";
+        }
+
+        @Override
+        public void run() {
+            //Keep running until LOGOUT
+            boolean keepGoing = true;
+            while(keepGoing) {
+                // read a String (which is an object)
+                try {
+                    cm = (ChatMessage) sInput.readObject();
+                } catch (IOException e) {
+                    System.out.println(username + " Exception reading Streams: " + e);
+                    break;			
+                } catch(ClassNotFoundException e2) {
+                    break;
+                }
+                // the messaage part of the ChatMessage
+                String message = cm.getMessage();
+
+                // Switch on the type of message receive
+                switch(cm.getType()) {
+
+                case ChatMessage.MESSAGE:
+                    broadcast(username + ": " + message);
+                    break;
+                case ChatMessage.LOGOUT:
+                    System.out.println(username + " disconnected with a LOGOUT message.");
+                    keepGoing = false;
+                    break;
+                case ChatMessage.WHOISIN:
+                    writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
+                    // scan al the users connected
+                    for(int i = 0; i < list.size(); ++i) {
+                        ClientThread ct = list.get(i);
+                        writeMsg((i+1) + ") " + ct.username + " since " + ct.date);
+                    }
+                    break;
+                }
+            }
+            
+            // remove myself from the arrayList containing the list of the
+            // connected Clients
+            remove(id);
+            close();
+        }
+
+        // try to close everything
+        private void close() {
+            // try to close the connection
+            try {
+                if(sOutput != null) sOutput.close();
+            } catch(Exception e) {}
+            
+            try {
+                if(sInput != null) sInput.close();
+            } catch(Exception e) {}
+            
+            try {
+                if(socket != null) socket.close();
+            } catch (Exception e) {}
+        }
+
+        /*
+         * Write a String to the Client output stream
+         */
+        private boolean writeMsg(String msg) {
+            // if Client is still connected send the message to it
+            if(!socket.isConnected()) {
+                close();
+                return false;
+            }
+            
+            // write the message to the stream
+            try {
+                    sOutput.writeObject(msg);
+            } catch(IOException e) {
+                // if an error occurs, do not abort just inform the user
+                System.out.println("Error sending message to " + username);
+                System.out.println(e.toString());
+            }
+            return true;
+        }
+    }
+}
