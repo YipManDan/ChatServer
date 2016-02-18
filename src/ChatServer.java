@@ -14,6 +14,7 @@ public class ChatServer {
     private static int uniqueID;
     private static ServerSocket serverSocket;
     private static int port = 8080;
+    boolean loggedIn = true;
 
     private ServerGUI sg;
    
@@ -60,7 +61,7 @@ public class ChatServer {
 
     public void stop()
     {
-        //keepGoing = false;
+        loggedIn = false;
         try
         {
             new Socket("localhost", port);
@@ -154,8 +155,8 @@ public class ChatServer {
 
         @Override
         public void run() {
+            loggedIn = true;
             //Keep running until LOGOUT
-            boolean loggedIn = true;
             while(loggedIn) {
                 // read a String (which is an object)
                 try {
