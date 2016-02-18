@@ -103,15 +103,15 @@ public class ChatServer {
             /* Creating both Data Stream */
             System.out.println("Thread trying to create Object Input/Output Streams");
             try {
-                    // create output first
-                    out = new ObjectOutputStream(socket.getOutputStream());
-                    in  = new ObjectInputStream(socket.getInputStream());
-                    // read the username
-                    username = (String) in.readObject();
-                    System.out.println(username + " just connected.");
+                // create output first
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in  = new ObjectInputStream(socket.getInputStream());
+                // read the username
+                username = (String) in.readObject();
+                System.out.println(username + " just connected.");
             } catch (IOException e) {
-                    System.out.println("Exception creating new Input/output Streams: " + e);
-                    return;
+                System.out.println("Exception creating new Input/output Streams: " + e);
+                return;
             } catch (ClassNotFoundException e) {}
 
             date = new Date().toString() + "\n";
