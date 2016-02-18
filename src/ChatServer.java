@@ -14,12 +14,22 @@ public class ChatServer {
     private static int uniqueID;
     private static ServerSocket serverSocket;
     private static int port = 8080;
+
+    private ServerGUI sg;
    
     private static ArrayList<ClientThread> list; //Keep track of clients
     private SimpleDateFormat sdf;
     
     public ChatServer(int port) {
-         this.port = port;
+        this(port, null);
+    }
+
+    public ChatServer(int port, ServerGUI sg) {
+        //GUI or not
+        this.sg = sg;
+        this.port = port;
+        sdf = new SimpleDateFormat("HH:mm:ss");
+        list = new ArrayList<ClientThread>();
     }
     
     public void start() {
