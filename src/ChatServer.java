@@ -14,7 +14,7 @@ public class ChatServer {
     private static int uniqueID;
     private static ServerSocket serverSocket;
     private static int port = 8080; //default port number is 8080
-    boolean loggedIn = true;
+    boolean continueServer = true;
 
     private ServerGUI sg;
    
@@ -45,7 +45,7 @@ public class ChatServer {
             //System.out.println("Working Directory: \"" + System.getProperty("user.dir").replace('\\', '/') + "\"");
 
             //Server infinite loop and wait for clients to connect
-            while (loggedIn) {
+            while (continueServer) {
                 
                 Socket socket = serverSocket.accept(); //accept client connection
                 event("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
@@ -85,7 +85,7 @@ public class ChatServer {
 
     public void stop()
     {
-        loggedIn = false;
+        continueServer = false;
         try
         {
             new Socket("localhost", port);
@@ -186,7 +186,7 @@ public class ChatServer {
                 event(username + " has connected");
                 
             } catch (IOException e) {
-                System.out.println("Exception creating new Input/output Streams: " + e);
+                event("Exception creating new Input/output Streams: " + e);
                 return;
             } catch (ClassNotFoundException e) {}
 
@@ -195,14 +195,14 @@ public class ChatServer {
 
         @Override
         public void run() {
-            loggedIn = true;
+            boolean loggedIn = true;
             //Keep running until LOGOUT
             while(loggedIn) {
                 // read a String (which is an object)
                 try {
                     cm = (ChatMessage) in.readObject();
                 } catch (IOException e) {
-                    System.out.println(username + " Exception reading Streams: " + e);
+                    event(username + " Exception reading Streams: " + e);
                     break;			
                 } catch(ClassNotFoundException e2) {
                     break;
@@ -217,12 +217,12 @@ public class ChatServer {
                     broadcast(username + ": " + message);
                     break;
                 case ChatMessage.LOGOUT:
-                    System.out.println(username + " disconnected with a LOGOUT message.");
+                    event(username + " disconnected with a LOGOUT message.");
                     loggedIn = false;
                     break;
                 case ChatMessage.WHOISIN:
                     writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
-                    // scan al the users connected
+                    // scan all the users connected
                     for(int i = 0; i < list.size(); ++i) {
                         ClientThread ct = list.get(i);
                         writeMsg((i+1) + ") " + ct.username + " since " + ct.date);
@@ -265,8 +265,8 @@ public class ChatServer {
                 out.writeObject(msg);
             } catch(IOException e) {
                 // if an error occurs, do not abort just inform the user
-                System.out.println("Error sending message to " + username);
-                System.out.println(e.toString());
+                event("Error sending message to " + username);
+                event(e.toString());
             }
             
             return true;
