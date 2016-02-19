@@ -39,7 +39,7 @@ public class ChatServer {
         try {
             serverSocket = new ServerSocket(port); //Start listening on port
             
-            System.out.println("Web Server running on Inet Address " + serverSocket.getInetAddress()
+            event("Web Server running on Inet Address " + serverSocket.getInetAddress()
                     + " port " + serverSocket.getLocalPort());
             
             //System.out.println("Working Directory: \"" + System.getProperty("user.dir").replace('\\', '/') + "\"");
@@ -48,16 +48,33 @@ public class ChatServer {
             while (loggedIn) {
                 
                 Socket socket = serverSocket.accept(); //accept client connection
-                System.out.println("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
+                event("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
                 
                 //Create a new thread and handle the connection
                 ClientThread ct = new ClientThread(socket);
                 list.add(ct); //Save client to ArrayList
                 ct.start();
             }
+            //when server stops
+            try
+            {
+                serverSocket.close();
+                //close all threads
+                /*
+                for(int i=0; i<list.size(); i++)
+                {
+                    ClientThread tempThread = list.get(i);
+                        tempThread.close();
+                }
+                */
+            }
+            catch (Exception e)
+            {
+                event("Exception in closing server and clients: " + e);
+            }
             
         } catch (Exception e) {
-            System.out.println(e);
+            event(sdf.format(new Date()) + " Exception in starting server: " + e);
         }
     }
 
@@ -72,6 +89,15 @@ public class ChatServer {
         {
             //cry
         }
+    }
+
+    private void event(String msg)
+    {
+        String time = sdf.format(new Date())+ " " + msg;
+        if(sg == null)
+            System.out.println(time);
+        else
+            sg.appendEvent(time + "\n");
     }
     
     //Broadcast a message to all Clients
