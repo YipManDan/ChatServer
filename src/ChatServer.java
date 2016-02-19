@@ -117,8 +117,9 @@ public class ChatServer {
             sg.appendRoom(message);
 
        // we loop in reverse order in case we would have to remove a Client
-       for(int i = list.size(); i >= 0; --i) {
+       for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
+           System.out.println("Sending a message to client" + i);
             // try to write to the Client if it fails remove it from the list
             if(!ct.writeMsg(message)) {
                 list.remove(i);
