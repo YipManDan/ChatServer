@@ -11,33 +11,33 @@ import java.awt.event.WindowListener;
  */
 public class ServerGUI extends JFrame implements ActionListener, WindowListener{
     private static final long serialVersionUID = 1L;
-    //the stop and start buttons
     private JButton stopStart;
-    //JTextArea for the chatroom and the events
+    //JTextArea for the chatroom and the event log
     private JTextArea chat, event;
-    //The port number
+    //port number
     private JTextField tPortNumber;
-    //my server
+    //server to use
     private ChatServer server;
 
 
-    //server constructor that receive the port to listen to for connection as paramter
+    //server constructor has port number as argument
     ServerGUI(int port)
     {
         super("Chat Server");
         server = null;
-        //in the Northpanel the PortNumber the Start and Stop buttons
+
+        //Northpanel displays PortNumber and the Start/Stop button
         JPanel north = new JPanel();
         north.add(new JLabel("Port Number: "));
         tPortNumber = new JTextField("  " + port);
         north.add(tPortNumber);
-        // to stop or start the server, we start with "Start"
+        //button to start or stop server; Initial use is start
         stopStart = new JButton("Start");
         stopStart.addActionListener(this);
         north.add(stopStart);
         add(north, BorderLayout.NORTH);
 
-        //the event and chat room
+        //add event log and chat room
         JPanel center = new JPanel(new GridLayout(2,1));
         chat = new JTextArea(80, 80);
         chat.setEditable(false);
@@ -67,7 +67,8 @@ public class ServerGUI extends JFrame implements ActionListener, WindowListener{
         event.setCaretPosition(chat.getText().length() - 1);
     }
 
-    //start or stopped when clicked
+    //start/stop button
+    //starts server or stops server depending on state
     public void actionPerformed(ActionEvent e) {
         //if running we have to stop
         if (server != null) {
