@@ -60,13 +60,18 @@ public class ChatServer {
             {
                 serverSocket.close();
                 //close all threads
-                /*
                 for(int i=0; i<list.size(); i++)
                 {
                     ClientThread tempThread = list.get(i);
-                        tempThread.close();
+                    try{
+                        tempThread.socket.close();
+                        tempThread.in.close();
+                        tempThread.out.close();
+                    }
+                    catch (IOException ioE){
+
+                    }
                 }
-                */
             }
             catch (Exception e)
             {
@@ -101,11 +106,15 @@ public class ChatServer {
     }
     
     //Broadcast a message to all Clients
+    //TODO: this will need to be changed to handle direct messaging
     private synchronized void broadcast(String message) {
        String time = sdf.format(new Date());
        
        message = time + ": " + message + "\n";
-       System.out.print(message);
+        if(sg == null)
+            System.out.print(message);
+        else
+            sg.appendRoom(message);
 
        // we loop in reverse order in case we would have to remove a Client
        for(int i = list.size(); i >= 0; --i) {
@@ -113,17 +122,20 @@ public class ChatServer {
             // try to write to the Client if it fails remove it from the list
             if(!ct.writeMsg(message)) {
                 list.remove(i);
-                System.out.print("Disconnected Client: " + ct.username + " removed from list");
+                event("Disconnected Client" + i + " : " + ct.username + " removed from list");
             }
        }
     }
+
 
     // for a client who logoff using the LOGOUT message
     synchronized void remove(int id) {
         // scan the array list until we found the Id
         for(int i = 0; i < list.size(); ++i) {
-            if(list.get(i).id == id) {
+            ClientThread ct = list.get(i);
+            if(ct.id == id) {
                 list.remove(i);
+                event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 return;
             }
         }
@@ -171,7 +183,7 @@ public class ChatServer {
                 
                 // read the username
                 username = (String) in.readObject();
-                System.out.println(username + " has connected");
+                event(username + " has connected");
                 
             } catch (IOException e) {
                 System.out.println("Exception creating new Input/output Streams: " + e);
