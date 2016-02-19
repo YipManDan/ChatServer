@@ -13,15 +13,17 @@ import java.text.SimpleDateFormat;
 public class ChatServer {
     private static int uniqueID;
     private static ServerSocket serverSocket;
-    private static int port = 8080;
+    private static int port = 8080; //default port number is 8080
     boolean loggedIn = true;
 
     private ServerGUI sg;
    
     private static ArrayList<ClientThread> list; //Keep track of clients
     private SimpleDateFormat sdf;
-    
+
+
     public ChatServer(int port) {
+        //open server with no GUI
         this(port, null);
     }
 
@@ -43,7 +45,7 @@ public class ChatServer {
             //System.out.println("Working Directory: \"" + System.getProperty("user.dir").replace('\\', '/') + "\"");
 
             //Server infinite loop and wait for clients to connect
-            while (true) {
+            while (loggedIn) {
                 
                 Socket socket = serverSocket.accept(); //accept client connection
                 System.out.println("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
