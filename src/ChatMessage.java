@@ -6,6 +6,7 @@
  */
 
 import java.io.*;
+import java.util.ArrayList;
 
 /**
  * Source: http://www.dreamincode.net/forums/topic/259777-a-simple-chat-program-with-clientserver-gui-optional/
@@ -23,11 +24,20 @@ public class ChatMessage implements Serializable {
     
     private int type;
     private String message;
+    private int userID;
+    ArrayList<UserId> recipients;
+    UserId sender;
 
     // constructor
     ChatMessage(int type, String message) {
         this.type = type;
         this.message = message;
+    }
+    ChatMessage(int type, String message, ArrayList<UserId> recipients, UserId sender) {
+        this.type = type;
+        this.message = message;
+        this.recipients = recipients;
+        this.sender = sender;
     }
 
     // getters
@@ -37,5 +47,23 @@ public class ChatMessage implements Serializable {
     
     String getMessage() {
         return message;
+    }
+
+    void setUserID(int userID)
+    {
+        this.userID = userID;
+    }
+
+    int getUserID()
+    {
+        return userID;
+    }
+
+    ArrayList<UserId> getRecipients() {
+        return recipients;
+    }
+
+    UserId getSender() {
+        return sender;
     }
 }
