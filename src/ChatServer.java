@@ -33,6 +33,7 @@ public class ChatServer {
         this.port = port;
         sdf = new SimpleDateFormat("HH:mm:ss");
         list = new ArrayList<ClientThread>();
+        uniqueID=1;
     }
     
     public void start() {
@@ -226,8 +227,15 @@ public class ChatServer {
                     // scan all the users connected
                     for(int i = 0; i < list.size(); ++i) {
                         ClientThread ct = list.get(i);
-                        writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
+                        //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
+                        if(ct.id == this.id) {
+                            writeUser(ChatMessage.WHOISIN, ct.username+"(You)", ct.id, true);
+                        }
+                        else
+                            writeUser(ChatMessage.WHOISIN, ct.username, ct.id, false);
+
                     }
+                    writeMsg(ChatMessage.MESSAGE, "");
                     break;
                 }
             }
@@ -260,8 +268,8 @@ public class ChatServer {
                 close();
                 return false;
             }
-            ChatMessage cMsg = new ChatMessage(type, msg);
-            
+            ChatMessage cMsg = new ChatMessage(type, msg, new UserId(0, "Server"));
+
             // write the message to the stream
             try {
                 out.writeObject(cMsg);
@@ -271,6 +279,28 @@ public class ChatServer {
                 event(e.toString());
             }
             
+            return true;
+        }
+        private boolean writeUser(int type, String msg, int userID, boolean isReceiver) {
+            // if Client is still connected send the message to it
+            if (!socket.isConnected()) {
+                close();
+                return false;
+            }
+            ChatMessage cMsg = new ChatMessage(type, msg, new UserId(0, "Server"), isReceiver);
+            if (type == ChatMessage.WHOISIN) {
+                cMsg.setUserID(userID);
+            }
+
+            // write the message to the stream
+            try {
+                out.writeObject(cMsg);
+            } catch (IOException e) {
+                // if an error occurs, do not abort just inform the user
+                event("Error sending message to " + username);
+                event(e.toString());
+            }
+
             return true;
         }
     }
