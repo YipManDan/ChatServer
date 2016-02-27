@@ -231,10 +231,10 @@ public class ChatServer {
                         ClientThread ct = list.get(i);
                         //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
                         if(ct.id == this.id) {
-                            writeUser(ChatMessage.WHOISIN, ct.username+"(You)", ct.id, true);
+                            writeUser(ct.username+"(You)", ct.id, true);
                         }
                         else
-                            writeUser(ChatMessage.WHOISIN, ct.username, ct.id, false);
+                            writeUser(ct.username, ct.id, false);
 
                     }
                     writeMsg(ChatMessage.MESSAGE, "");
@@ -283,16 +283,14 @@ public class ChatServer {
             
             return true;
         }
-        private boolean writeUser(int type, String msg, int userID, boolean isReceiver) {
+        private boolean writeUser(String msg, int userID, boolean isReceiver) {
             // if Client is still connected send the message to it
             if (!socket.isConnected()) {
                 close();
                 return false;
             }
-            ChatMessage cMsg = new ChatMessage(type, msg, new UserId(0, "Server"), isReceiver);
-            if (type == ChatMessage.WHOISIN) {
-                cMsg.setUserID(userID);
-            }
+            ChatMessage cMsg = new ChatMessage(ChatMessage.WHOISIN, msg, new UserId(0, "Server"), isReceiver);
+            cMsg.setUserID(userID);
 
             // write the message to the stream
             try {
