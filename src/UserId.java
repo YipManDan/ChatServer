@@ -1,7 +1,9 @@
+import java.io.Serializable;
+
 /**
  * Created by Daniel on 2/24/2016.
  */
-public class UserId {
+public class UserId implements Serializable{
     private int userID;
     private String userName;
 
