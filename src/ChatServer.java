@@ -216,6 +216,7 @@ public class ChatServer {
                 switch(cm.getType()) {
 
                 case ChatMessage.MESSAGE:
+                    System.out.println("Message received from " + username);
                     broadcast(username + ": " + message);
                     break;
                 case ChatMessage.LOGOUT:
@@ -223,6 +224,7 @@ public class ChatServer {
                     loggedIn = false;
                     break;
                 case ChatMessage.WHOISIN:
+                    System.out.println("WHOISIN received from " + username);
                     writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n");
                     // scan all the users connected
                     for(int i = 0; i < list.size(); ++i) {
