@@ -131,6 +131,7 @@ public class ChatServer {
     //Send a message to all clients in recipients list
     private synchronized void multicast(ChatMessage cm, String username) {
         ArrayList<UserId> recipients = cm.getRecipients();
+        UserId user;
         String time = sdf.format(new Date());
         //Add time and sender to message
         String message = time + ": " + username + ": " + cm.getMessage() + "\n";
@@ -138,21 +139,28 @@ public class ChatServer {
             System.out.print(message);
         else
             sg.appendRoom(message);
+
+        //TODO: Remove this
+        for(int i = 0; i < recipients.size(); i++) {
+            System.out.println("In multicast list: " + recipients.get(i).getName() + " " + recipients.get(i).getId());
+        }
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
-            System.out.println("Checking if user " + ct.username + " is in multicast group");
+            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in multicast group");
             //Only send message if ct is in the recipients list
-            if(recipients.contains(new UserId(ct.id, ct.username))) {
-                System.out.println("Sending a message to client" + i);
-                // try to write to the Client, if it fails remove it from the list
-                if(!ct.writeMsg(ChatMessage.MESSAGE, message)) {
-                    list.remove(i);
-                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+            for (int j = 0; j < recipients.size(); j++) {
+                user = recipients.get(j);
+                if (user.getId() == ct.id) {
+                    System.out.println("Sending a message to client" + i);
+                    // try to write to the Client, if it fails remove it from the list
+                    if (!ct.writeMsg(ChatMessage.MESSAGE, message)) {
+                        list.remove(i);
+                        event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+                    }
                 }
             }
         }
-
     }
 
 
