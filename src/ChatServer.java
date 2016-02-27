@@ -141,6 +141,7 @@ public class ChatServer {
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
+            System.out.println("Checking if user " + ct.username + " is in multicast group");
             //Only send message if ct is in the recipients list
             if(recipients.contains(new UserId(ct.id, ct.username))) {
                 System.out.println("Sending a message to client" + i);
