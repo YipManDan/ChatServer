@@ -269,7 +269,7 @@ public class ChatServer {
                         ClientThread ct = list.get(i);
                         //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
                         if(ct.id == this.id) {
-                            writeUser(ct.username+"(You)", ct.id, true);
+                            writeUser(ct.username, ct.id, true);
                         }
                         else
                             writeUser(ct.username, ct.id, false);
