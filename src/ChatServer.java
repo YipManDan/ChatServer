@@ -122,14 +122,14 @@ public class ChatServer {
             ClientThread ct = list.get(i);
            System.out.println("Sending a message to client" + i);
             // try to write to the Client if it fails remove it from the list
-            if(!ct.writeMsg(ChatMessage.MESSAGE, message)) {
+            if(!ct.writeMsg(ChatMessage.MESSAGE, message, new UserId(0, "Server"))) {
                 list.remove(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
             }
        }
     }
     //Send a message to all clients in recipients list
-    private synchronized void multicast(ChatMessage cm, String username) {
+    private synchronized void multicast(ChatMessage cm, String username, int id) {
         ArrayList<UserId> recipients = cm.getRecipients();
         UserId user;
         String time = sdf.format(new Date());
@@ -154,7 +154,7 @@ public class ChatServer {
                 if (user.getId() == ct.id) {
                     System.out.println("Sending a message to client" + i);
                     // try to write to the Client, if it fails remove it from the list
-                    if (!ct.writeMsg(ChatMessage.MESSAGE, message)) {
+                    if (!ct.writeMsg(ChatMessage.MESSAGE, message, cm.getSender())) {
                         list.remove(i);
                         event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                     }
@@ -254,7 +254,7 @@ public class ChatServer {
                     if(cm.getRecipients().size()==0)
                         broadcast(username + ": " + message);
                     else
-                        multicast(cm, username);
+                        multicast(cm, username, id);
                     break;
                 case ChatMessage.LOGOUT:
                     event(username + " disconnected with a LOGOUT message.");
@@ -262,7 +262,7 @@ public class ChatServer {
                     break;
                 case ChatMessage.WHOISIN:
                     System.out.println("WHOISIN received from " + username);
-                    writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n");
+                    writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", new UserId(0, "Server"));
                     // scan all the users connected
                     for(int i = 0; i < list.size(); ++i) {
                         ClientThread ct = list.get(i);
@@ -274,7 +274,7 @@ public class ChatServer {
                             writeUser(ct.username, ct.id, false);
 
                     }
-                    writeMsg(ChatMessage.MESSAGE, "");
+                    writeMsg(ChatMessage.MESSAGE, "", new UserId(0, "Server"));
                     break;
                 }
             }
@@ -301,13 +301,14 @@ public class ChatServer {
         }
 
         //Write message to the Client output stream
-        private boolean writeMsg(int type, String msg) {
+        private boolean writeMsg(int type, String msg, UserId sender) {
             // if Client is still connected send the message to it
             if(!socket.isConnected()) {
                 close();
                 return false;
             }
-            ChatMessage cMsg = new ChatMessage(type, msg, new UserId(0, "Server"));
+            ChatMessage cMsg = new ChatMessage(type, msg, sender);
+            event("User info: " + sender.getId() + " " + sender.getName());
 
             // write the message to the stream
             try {
