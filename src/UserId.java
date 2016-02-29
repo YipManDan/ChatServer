@@ -18,7 +18,7 @@ public class UserId implements Serializable{
     @Override
     public boolean equals(Object o) {
         UserId user = (UserId)o;
-        if(user.getId() == userID && user.getName() == userName)
+        if(user.getId() == userID && user.getName().equals(userName))
             return true;
         else
             return false;
