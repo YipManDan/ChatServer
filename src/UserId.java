@@ -15,4 +15,12 @@ public class UserId implements Serializable{
 
     int getId(){return userID;}
     String getName(){return userName;}
+    @Override
+    public boolean equals(Object o) {
+        UserId user = (UserId)o;
+        if(user.getId() == userID && user.getName() == userName)
+            return true;
+        else
+            return false;
+    }
 }
