@@ -134,7 +134,7 @@ public class ChatServer {
         UserId user;
         String time = sdf.format(new Date());
         //Add time and sender to message
-        String message = time + ": " + username + ": " + cm.getMessage() + "\n";
+        String message = time + ": " + username + ": " + cm.getMessage();
         if(sg == null)
             System.out.print(message);
         else
