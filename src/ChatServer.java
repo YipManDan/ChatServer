@@ -123,7 +123,7 @@ public class ChatServer {
            System.out.println("Sending a message to client" + i);
             // try to write to the Client if it fails remove it from the list
             if(!ct.writeMsg(ChatMessage.MESSAGE, message, null, new UserId(0, "Server"))) {
-                list.remove(i);
+                removeThread(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
             }
        }
@@ -158,10 +158,18 @@ public class ChatServer {
                 recipients2.add(cm.getSender());
                 // try to write to the Client, if it fails remove it from the list
                 if (!ct.writeMsg(ChatMessage.MESSAGE, message, recipients2, cm.getSender())) {
-                    list.remove(i);
+                    removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
             }
+        }
+    }
+
+    private synchronized void removeThread(int index) {
+        list.remove(index);
+        for(int i = list.size()-1; i >= 0; --i) {
+            ClientThread ct = list.get(i);
+            whoIsIn(ct);
         }
     }
 
@@ -189,7 +197,7 @@ public class ChatServer {
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
             if(ct.id == id) {
-                list.remove(i);
+                removeThread(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 return;
             }
