@@ -111,7 +111,7 @@ public class ChatServer {
     private synchronized void broadcast(String message) {
        String time = sdf.format(new Date());
        
-       message = time + ": " + message + "\n";
+       message = time + ": " + message;
         if(sg == null)
             System.out.print(message);
         else
@@ -163,6 +163,23 @@ public class ChatServer {
                 }
             }
         }
+    }
+
+    private synchronized void whoIsIn(ClientThread thread) {
+        thread.writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server"));
+        // scan all the users connected
+        for(int i = 0; i < list.size(); ++i) {
+            ClientThread ct = list.get(i);
+            //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
+            if(ct.id == thread.id) {
+                thread.writeUser(ct.username, ct.id, true);
+            }
+            else
+                thread.writeUser(ct.username, ct.id, false);
+
+        }
+        thread.writeMsg(ChatMessage.MESSAGE, "", null, new UserId(0, "Server"));
+
     }
 
 
@@ -264,19 +281,7 @@ public class ChatServer {
                     break;
                 case ChatMessage.WHOISIN:
                     System.out.println("WHOISIN received from " + username);
-                    writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server"));
-                    // scan all the users connected
-                    for(int i = 0; i < list.size(); ++i) {
-                        ClientThread ct = list.get(i);
-                        //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
-                        if(ct.id == this.id) {
-                            writeUser(ct.username, ct.id, true);
-                        }
-                        else
-                            writeUser(ct.username, ct.id, false);
-
-                    }
-                    writeMsg(ChatMessage.MESSAGE, "", null, new UserId(0, "Server"));
+                    whoIsIn(this);
                     break;
                 }
             }
