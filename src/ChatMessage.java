@@ -20,9 +20,12 @@ public class ChatMessage implements Serializable {
     // WHOISIN to receive the list of the users connected
     // MESSAGE an ordinary message
     // LOGOUT to disconnect from the Server
-    static final int WHOISIN = 0, MESSAGE = 1, LOGOUT = 2;
+    static final int WHOISIN = 0, MESSAGE = 1, LOGOUT = 2, FILE = 3;
+    static final int FILESEND = 0, FILEACCEPT = 1, FILEDENY = 2;
     
     private int type;
+    private int fileStatus;
+    private int transferId;
     private String message;
     private int userID;
     ArrayList<UserId> recipients;
@@ -33,6 +36,16 @@ public class ChatMessage implements Serializable {
     ChatMessage(int type, String message, UserId sender) {
         this.type = type;
         this.message = message;
+        recipients = new ArrayList<>();
+        this.sender = sender;
+        this.isYou = false;
+    }
+    //constructor for file messaging
+    ChatMessage(int type, int fileStatus, int transferId, UserId sender){
+        this.type = type;
+        this.fileStatus = fileStatus;
+        this.transferId = transferId;
+        this.message = "";
         recipients = new ArrayList<>();
         this.sender = sender;
         this.isYou = false;
@@ -57,6 +70,14 @@ public class ChatMessage implements Serializable {
     // getters
     int getType() {
         return type;
+    }
+
+    int getFileStatus(){
+        return fileStatus;
+    }
+
+    int getTransferId(){
+        return transferId;
     }
 
     Boolean getIsYou(){
