@@ -152,11 +152,12 @@ public class ChatServer {
             if(recipients.contains(new UserId(ct.id, ct.username))) {
                 System.out.println("Sending a message to client" + i);
                 //Arraylist of UserId to inform client who is in chatroom
-                ArrayList<UserId> recipients2 = cm.getRecipients();
+                ArrayList<UserId> recipients2 = new ArrayList<>();
+                recipients2.addAll(cm.getRecipients());
                 recipients2.remove(new UserId(ct.id, ct.username));
                 recipients2.add(cm.getSender());
                 // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(ChatMessage.MESSAGE, message, recipients, cm.getSender())) {
+                if (!ct.writeMsg(ChatMessage.MESSAGE, message, recipients2, cm.getSender())) {
                     list.remove(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
