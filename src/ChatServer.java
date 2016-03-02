@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 
 public class ChatServer {
     private static int uniqueID;
+    private static int transferID;
     private static ServerSocket serverSocket;
     private static int port = 8080; //default port number is 8080
     boolean continueServer = true;
@@ -19,6 +20,7 @@ public class ChatServer {
     private ServerGUI sg;
    
     private static ArrayList<ClientThread> list; //Keep track of clients
+    private static ArrayList<FileTransferHandler> fileTransfers;
     private SimpleDateFormat sdf;
 
 
@@ -32,8 +34,10 @@ public class ChatServer {
         this.sg = sg;
         this.port = port;
         sdf = new SimpleDateFormat("HH:mm:ss");
-        list = new ArrayList<ClientThread>();
+        list = new ArrayList<>();
+        fileTransfers = new ArrayList<>();
         uniqueID=1;
+        transferID=1;
     }
     
     public void start() {
@@ -276,21 +280,25 @@ public class ChatServer {
                 // Switch on the type of message receive
                 switch(cm.getType()) {
 
-                case ChatMessage.MESSAGE:
-                    System.out.println("Message received from " + username);
-                    if(cm.getRecipients().size()==0)
-                        broadcast(username + ": " + message);
-                    else
-                        multicast(cm, username, id);
-                    break;
-                case ChatMessage.LOGOUT:
-                    event(username + " disconnected with a LOGOUT message.");
-                    loggedIn = false;
-                    break;
-                case ChatMessage.WHOISIN:
-                    System.out.println("WHOISIN received from " + username);
-                    whoIsIn(this);
-                    break;
+                    case ChatMessage.MESSAGE:
+                        System.out.println("Message received from " + username);
+                        if(cm.getRecipients().size()==0)
+                            broadcast(username + ": " + message);
+                        else
+                            multicast(cm, username, id);
+                        break;
+                    case ChatMessage.LOGOUT:
+                        event(username + " disconnected with a LOGOUT message.");
+                        loggedIn = false;
+                        break;
+                    case ChatMessage.WHOISIN:
+                        System.out.println("WHOISIN received from " + username);
+                        whoIsIn(this);
+                        break;
+                    case ChatMessage.FILE:
+                        System.out.println("FILE received from " + username);
+
+                        break;
                 }
             }
             
