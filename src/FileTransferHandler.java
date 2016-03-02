@@ -20,47 +20,56 @@ public class FileTransferHandler {
     int current = 0;
     FileOutputStream fos = null;
     BufferedOutputStream bos = null;
-    Socket socket = ct.socket;
+    InputStream is;
+    Socket socket;
     File tempFile;
 
 
-    FileTransferHandler(ChatMessage cMsg, int transferId, ChatServer.ClientThread ct, ChatServer server) {
+    FileTransferHandler(ChatMessage cMsg, int transferId, InputStream is, ChatServer server) {
         this.cMsg = cMsg;
         this.transferId = transferId;
         this.recipients = cMsg.getRecipients();
-        this.ct = ct;
+        //this.ct = ct;
+        //socket = ct.socket;
+        //this.socket = socket;
+        this.is = is;
         this.server = server;
         length = cMsg.getFileSize();
         sender = cMsg.getSender();
 
-        getFile();
+        //getFile();
         //sendRequest();
 
     }
 
     void getFile(){
         //This should accept the file into a temporary file
+        server.event("Starting file transfer to server");
         try {
             byte [] mybytearray = new byte [((int) length)];
-            InputStream is = socket.getInputStream();
+            //is = socket.getInputStream();
             tempFile = File.createTempFile("tmp", null, null);
+            tempFile.deleteOnExit();
             fos = new FileOutputStream(tempFile);
             bos = new BufferedOutputStream(fos);
             bytesRead = is.read(mybytearray, 0, mybytearray.length);
+            //current = 0;
             current = bytesRead;
             do {
                 bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
                 if(bytesRead >= 0)
                     current += bytesRead;
-            } while (bytesRead > -1);
+                server.event("File progress: " + current + " of " + length);
+            } while (current < length);
+            //} while (is.available() > 0);
+
 
             bos.write(mybytearray, 0, current);
             bos.flush();
-            server.event("Obtained temporary file: " + tempFile.getAbsolutePath());
 
         }
         catch (IOException e){
-            //QQ
+            server.event("Error in receiving file" + e.getMessage());
         }
         finally {
             try {
@@ -70,9 +79,10 @@ public class FileTransferHandler {
                     bos.close();
             }
             catch (IOException e){
-                //QQ
+                server.event("Error closing file streams" + e.getMessage());
             }
         }
+        server.event("Obtained temporary file: " + tempFile.getAbsolutePath());
 
     }
     void sendRequest(){
@@ -97,5 +107,9 @@ public class FileTransferHandler {
             return;
 
         }
+    }
+
+    InputStream getIs(){
+        return is;
     }
 }
