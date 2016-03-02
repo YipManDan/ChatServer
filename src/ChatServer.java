@@ -341,9 +341,17 @@ public class ChatServer {
                     case ChatMessage.FILE:
                         if (cm.getFileStatus() == ChatMessage.FILESEND) {
                             System.out.println("FILE transfer initiated from " + username);
-                            FileTransferHandler newFTH = new FileTransferHandler(cm, transferID, is, getServer());
+                            FileTransferHandler newFTH = new FileTransferHandler(cm, transferID, in, getServer());
                             fileTransfers.add(newFTH);
                             transferID++;
+                            try{
+                                in.readObject();
+                            }
+                            catch (ClassNotFoundException e){
+                            }
+                            catch (IOException e){
+
+                            }
                             //is = newFTH.getIs();
                             /*
                             try{
