@@ -101,7 +101,7 @@ public class ChatServer {
         }
     }
 
-    private void event(String msg)
+    public void event(String msg)
     {
         String time = sdf.format(new Date())+ " " + msg;
         if(sg == null)
@@ -126,7 +126,7 @@ public class ChatServer {
             ClientThread ct = list.get(i);
            System.out.println("Sending a message to client" + i);
             // try to write to the Client if it fails remove it from the list
-            if(!ct.writeMsg(ChatMessage.MESSAGE, message, null, new UserId(0, "Server"))) {
+            if(!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, null, new UserId(0, "Server")))) {
                 removeThread(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
             }
@@ -161,13 +161,50 @@ public class ChatServer {
                 recipients2.remove(new UserId(ct.id, ct.username));
                 recipients2.add(cm.getSender());
                 // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(ChatMessage.MESSAGE, message, recipients2, cm.getSender())) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, recipients2, cm.getSender()))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
             }
         }
     }
+
+    public synchronized void sendFileTransfer(ArrayList<UserId> recipients, ChatMessage cm){
+        UserId user;
+        //String time = sdf.format(new Date());
+        //Add time and sender to message
+        //String message = time + ": " + username + ": " + cm.getMessage();
+        if(sg == null)
+            System.out.print("Sending file transfer requests");
+        else
+            sg.appendRoom("Sending file transfer requests");
+
+        //TODO: Remove this
+        for(int i = 0; i < recipients.size(); i++) {
+            System.out.println("In sendFileTransfer list: " + recipients.get(i).getName() + " " + recipients.get(i).getId());
+        }
+        // we loop in reverse order in case we would have to remove a Client
+        for(int i = list.size()-1; i >= 0; --i) {
+            ClientThread ct = list.get(i);
+            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendFileTransfer group");
+            //Only send message if ct is in the recipients list
+            if(recipients.contains(new UserId(ct.id, ct.username))) {
+                System.out.println("Sending a fileTransferRequest to client" + i);
+                //Arraylist of UserId to inform client who is in chatroom
+                ArrayList<UserId> recipients2 = new ArrayList<>();
+                recipients2.addAll(cm.getRecipients());
+                recipients2.remove(new UserId(ct.id, ct.username));
+                recipients2.add(cm.getSender());
+                // try to write to the Client, if it fails remove it from the list
+                if (!ct.writeMsg(cm)){
+                    removeThread(i);
+                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+                }
+            }
+        }
+
+    }
+
 
     private synchronized void removeThread(int index) {
         list.remove(index);
@@ -178,7 +215,7 @@ public class ChatServer {
     }
 
     private synchronized void whoIsIn(ClientThread thread) {
-        thread.writeMsg(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server"));
+        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server")));
         // scan all the users connected
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
@@ -190,7 +227,8 @@ public class ChatServer {
                 thread.writeUser(ct.username, ct.id, false);
 
         }
-        thread.writeMsg(ChatMessage.MESSAGE, "", null, new UserId(0, "Server"));
+        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "", null, new UserId(0, "Server")));
+
 
     }
 
@@ -207,7 +245,11 @@ public class ChatServer {
             }
         }
     }
-        
+
+    ChatServer getServer(){
+        return this;
+    }
+
     public static void main(String[] args) {
         //Read in port from command line
         //default to port 8080 if there's a parsing error
@@ -296,8 +338,11 @@ public class ChatServer {
                         whoIsIn(this);
                         break;
                     case ChatMessage.FILE:
-                        System.out.println("FILE received from " + username);
-
+                        if (cm.getFileStatus() == ChatMessage.FILESEND) {
+                            System.out.println("FILE received from " + username);
+                            fileTransfers.add(new FileTransferHandler(cm, transferID, this, getServer()));
+                            transferID++;
+                        }
                         break;
                 }
             }
@@ -324,14 +369,14 @@ public class ChatServer {
         }
 
         //Write message to the Client output stream
-        private boolean writeMsg(int type, String msg,ArrayList<UserId> recipients, UserId sender) {
+        private boolean writeMsg(ChatMessage cMsg) {
             // if Client is still connected send the message to it
             if(!socket.isConnected()) {
                 close();
                 return false;
             }
-            ChatMessage cMsg = new ChatMessage(type, msg, recipients, sender);
-            event("User info: " + sender.getId() + " " + sender.getName());
+            //ChatMessage cMsg = new ChatMessage(type, msg, recipients, sender);
+            event("User info: " + cMsg.getSender().getId() + " " + cMsg.getSender().getName());
 
             // write the message to the stream
             try {
