@@ -271,6 +271,7 @@ public class ChatServer {
         Socket socket;
         ObjectInputStream in;
         ObjectOutputStream out;
+        InputStream is;
         
         int id; //Unique ID (easier for deconnection)
         String username; //Client username
@@ -288,8 +289,8 @@ public class ChatServer {
             //Create both Data Stream
             try {
                 out = new ObjectOutputStream(socket.getOutputStream());
-                in  = new ObjectInputStream(socket.getInputStream());
-                
+                is = socket.getInputStream();
+                in  = new ObjectInputStream(is);
                 // read the username
                 username = (String) in.readObject();
                 event(username + " has connected");
@@ -339,9 +340,31 @@ public class ChatServer {
                         break;
                     case ChatMessage.FILE:
                         if (cm.getFileStatus() == ChatMessage.FILESEND) {
-                            System.out.println("FILE received from " + username);
-                            fileTransfers.add(new FileTransferHandler(cm, transferID, this, getServer()));
+                            System.out.println("FILE transfer initiated from " + username);
+                            FileTransferHandler newFTH = new FileTransferHandler(cm, transferID, is, getServer());
+                            fileTransfers.add(newFTH);
                             transferID++;
+                            //is = newFTH.getIs();
+                            /*
+                            try{
+                                if(is == null)
+                                    System.out.println("is is null");
+                                if(in != null) {
+                                    System.out.println("in is not null");
+                                    //in.close();
+                                }
+                                if(socket.isClosed()) {
+                                    System.out.println("QQ");
+                                    socket = serverSocket.accept();
+                                }
+                                if(in == null){
+                                    in = new ObjectInputStream(is);
+                                }
+                            }
+                            catch (IOException e) {
+                                event("New exception: " + e.getMessage());
+                            }
+                            */
                         }
                         break;
                 }
