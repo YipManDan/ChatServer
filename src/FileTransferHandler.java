@@ -12,27 +12,38 @@ public class FileTransferHandler {
     private ChatMessage cMsg;
     private int transferId;
     ChatServer.ClientThread ct;
+    ChatServer server;
+
+    long length;
+    UserId sender;
+    int bytesRead;
+    int current = 0;
+    FileOutputStream fos = null;
+    BufferedOutputStream bos = null;
+    Socket socket = ct.socket;
+    File tempFile;
 
 
-    FileTransferHandler(ChatMessage cMsg, int transferId, ChatServer.ClientThread ct) {
+    FileTransferHandler(ChatMessage cMsg, int transferId, ChatServer.ClientThread ct, ChatServer server) {
         this.cMsg = cMsg;
         this.transferId = transferId;
         this.recipients = cMsg.getRecipients();
         this.ct = ct;
-        long length = cMsg.getFileSize();
-        UserId sender = cMsg.getSender();
+        this.server = server;
+        length = cMsg.getFileSize();
+        sender = cMsg.getSender();
 
-        int bytesRead;
-        int current = 0;
-        FileOutputStream fos = null;
-        BufferedOutputStream bos = null;
-        Socket socket = ct.socket;
+        getFile();
+        //sendRequest();
 
+    }
+
+    void getFile(){
         //This should accept the file into a temporary file
         try {
             byte [] mybytearray = new byte [((int) length)];
             InputStream is = socket.getInputStream();
-            File tempFile = File.createTempFile("tmp", null, null);
+            tempFile = File.createTempFile("tmp", null, null);
             fos = new FileOutputStream(tempFile);
             bos = new BufferedOutputStream(fos);
             bytesRead = is.read(mybytearray, 0, mybytearray.length);
@@ -45,7 +56,7 @@ public class FileTransferHandler {
 
             bos.write(mybytearray, 0, current);
             bos.flush();
-            //Print out success alert
+            server.event("Obtained temporary file: " + tempFile.getAbsolutePath());
 
         }
         catch (IOException e){
@@ -62,6 +73,11 @@ public class FileTransferHandler {
                 //QQ
             }
         }
+
+    }
+    void sendRequest(){
+        server.sendFileTransfer(recipients, new ChatMessage(ChatMessage.FILE, ChatMessage.FILESEND, transferId, length, "", sender));
+        return;
     }
 
     int getTransferId(){
@@ -74,5 +90,12 @@ public class FileTransferHandler {
 
     void removeRecipient(UserId user){
         recipients.remove(user);
+    }
+    void sendFile(int transferId){
+        if(this.transferId != transferId){
+            server.event("File transferID incorrect");
+            return;
+
+        }
     }
 }
