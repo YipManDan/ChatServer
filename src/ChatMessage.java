@@ -29,9 +29,9 @@ public class ChatMessage implements Serializable {
     private long fileSize;
     private String message;
     private int userID;
-    ArrayList<UserId> recipients;
-    UserId sender;
-    Boolean isYou;  //Allows server to tell client it's own UserId
+    private ArrayList<UserId> recipients;
+    private UserId sender;
+    private Boolean isYou;  //Allows server to tell client it's own UserId
 
     // constructor for a simple message to server
     ChatMessage(int type, String message, UserId sender) {
@@ -53,10 +53,11 @@ public class ChatMessage implements Serializable {
         this.isYou = false;
     }
     //constructor for file transfer initializing
-    ChatMessage(int type, int fileStatus, long fileSize, ArrayList<UserId> recipients, UserId sender) {
+    ChatMessage(int type, int fileStatus, long fileSize, String message, ArrayList<UserId> recipients, UserId sender) {
         this.type = type;
         this.fileStatus = fileStatus;
         this.fileSize = fileSize;
+        this.message = message;
         this.recipients = recipients;
         this.sender = sender;
     }

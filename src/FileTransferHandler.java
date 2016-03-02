@@ -20,25 +20,27 @@ public class FileTransferHandler {
     int current = 0;
     FileOutputStream fos = null;
     BufferedOutputStream bos = null;
-    InputStream is;
+    //InputStream is;
+    ObjectInputStream ois;
     Socket socket;
     File tempFile;
 
 
-    FileTransferHandler(ChatMessage cMsg, int transferId, InputStream is, ChatServer server) {
+    FileTransferHandler(ChatMessage cMsg, int transferId, ObjectInputStream ois, ChatServer server) {
         this.cMsg = cMsg;
         this.transferId = transferId;
         this.recipients = cMsg.getRecipients();
         //this.ct = ct;
         //socket = ct.socket;
         //this.socket = socket;
-        this.is = is;
+        //this.is = is;
+        this.ois = ois;
         this.server = server;
         length = cMsg.getFileSize();
         sender = cMsg.getSender();
 
-        //getFile();
-        //sendRequest();
+        getFile();
+        sendRequest();
 
     }
 
@@ -52,9 +54,17 @@ public class FileTransferHandler {
             tempFile.deleteOnExit();
             fos = new FileOutputStream(tempFile);
             bos = new BufferedOutputStream(fos);
-            bytesRead = is.read(mybytearray, 0, mybytearray.length);
+            try{
+                mybytearray = (byte []) ois.readObject();
+            }
+            catch (ClassNotFoundException e){
+                server.event("In reading file object:" + e.getMessage());
+            }
+            //bytesRead = is.read(mybytearray, 0, mybytearray.length);
             //current = 0;
             current = bytesRead;
+            current = (int)length;
+            /*
             do {
                 bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
                 if(bytesRead >= 0)
@@ -62,6 +72,7 @@ public class FileTransferHandler {
                 server.event("File progress: " + current + " of " + length);
             } while (current < length);
             //} while (is.available() > 0);
+            */
 
 
             bos.write(mybytearray, 0, current);
@@ -86,7 +97,7 @@ public class FileTransferHandler {
 
     }
     void sendRequest(){
-        server.sendFileTransfer(recipients, new ChatMessage(ChatMessage.FILE, ChatMessage.FILESEND, transferId, length, "", sender));
+        server.sendFileTransfer(recipients, new ChatMessage(ChatMessage.FILE, ChatMessage.FILESEND, transferId, length, cMsg.getMessage(), sender));
         return;
     }
 
@@ -109,7 +120,9 @@ public class FileTransferHandler {
         }
     }
 
+    /*
     InputStream getIs(){
         return is;
     }
+    */
 }
