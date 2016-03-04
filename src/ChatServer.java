@@ -301,10 +301,16 @@ public class ChatServer {
             } catch (ClassNotFoundException e) {}
 
             date = new Date().toString() + "\n";
+
         }
 
         @Override
         public void run() {
+            //Update user list of all users
+            for(int i = list.size()-1; i >= 0; --i) {
+                ClientThread ct = list.get(i);
+                whoIsIn(ct);
+            }
             boolean loggedIn = true;
             //Keep running until LOGOUT
             while(loggedIn) {
@@ -373,6 +379,25 @@ public class ChatServer {
                                 event("New exception: " + e.getMessage());
                             }
                             */
+                        }
+                        if(cm.getFileStatus() == ChatMessage.FILEDENY) {
+                            //Remove this user from recipient list
+                            System.out.println("File Deny Received");
+                            for(int i = 0; i < fileTransfers.size(); i++) {
+                                if(cm.getTransferId() == fileTransfers.get(i).getTransferId()) {
+                                    fileTransfers.get(i).removeRecipient(cm.getSender());
+                                    ArrayList<UserId> recipient = new ArrayList<UserId>();
+                                    recipient.add(fileTransfers.get(i).getSender());
+                                    multicast(new ChatMessage(ChatMessage.MESSAGE, "User: " + cm.getSender().getId() + " " + cm.getSender().getName() + " has denied the file transfer request", recipient, new UserId(0, "Server"))
+                                            , "Server", 0);
+                                    if(fileTransfers.get(i).getRecipientSize() <= 0){
+                                        event("Closing filetransfer: " + fileTransfers.get(i).getTransferId());
+                                        fileTransfers.remove(i);
+                                    }
+                                    break;
+                                }
+                            }
+
                         }
                         break;
                 }
