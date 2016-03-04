@@ -358,27 +358,6 @@ public class ChatServer {
                             catch (IOException e){
 
                             }
-                            //is = newFTH.getIs();
-                            /*
-                            try{
-                                if(is == null)
-                                    System.out.println("is is null");
-                                if(in != null) {
-                                    System.out.println("in is not null");
-                                    //in.close();
-                                }
-                                if(socket.isClosed()) {
-                                    System.out.println("QQ");
-                                    socket = serverSocket.accept();
-                                }
-                                if(in == null){
-                                    in = new ObjectInputStream(is);
-                                }
-                            }
-                            catch (IOException e) {
-                                event("New exception: " + e.getMessage());
-                            }
-                            */
                         }
                         if(cm.getFileStatus() == ChatMessage.FILEDENY) {
                             //Remove this user from recipient list
