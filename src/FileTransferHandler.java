@@ -19,9 +19,12 @@ public class FileTransferHandler {
     int bytesRead;
     int current = 0;
     FileOutputStream fos = null;
+    FileInputStream fis = null;
     BufferedOutputStream bos = null;
+    BufferedInputStream bis = null;
     //InputStream is;
     ObjectInputStream ois;
+    ObjectOutputStream oos;
     Socket socket;
     File tempFile;
 
@@ -96,6 +99,51 @@ public class FileTransferHandler {
         server.event("Obtained temporary file: " + tempFile.getAbsolutePath());
 
     }
+
+
+    private void writeFile(){
+        //parent.fileNotification(fc.getSelectedFile().length(), fc.getSelectedFile().getName());
+        if(tempFile == null)
+            return;
+        byte [] mybytearray = new byte[(int)tempFile.length()];
+        server.event("Sending File: " + tempFile.getName() + " from transaction: " + transferId);
+        try {
+            fis = new FileInputStream(tempFile);
+            bis = new BufferedInputStream(fis);
+            bis.read(mybytearray, 0, mybytearray.length);
+            /*
+            os = socket.getOutputStream();
+            os.write(mybytearray, 0, mybytearray.length);
+            os.flush();
+            */
+            oos.writeObject(mybytearray);
+            server.event("File Sent");
+        }
+        catch (IOException e1) {
+            server.event("File Send Error: " + e1.getMessage());
+        }
+        finally {
+            if (bis != null) {
+                try{
+                    bis.close();
+                }
+                catch (IOException e2){
+                }
+            }
+            /*
+            if(os != null) {
+                try {
+                    os.close();
+                }
+                catch (IOException e3){
+                }
+            }
+            */
+        }
+
+    }
+
+
     void sendRequest(){
         server.sendFileTransfer(recipients, new ChatMessage(ChatMessage.FILE, ChatMessage.FILESEND, transferId, length, cMsg.getMessage(), sender));
         return;
@@ -109,15 +157,33 @@ public class FileTransferHandler {
         return recipients;
     }
 
-    void removeRecipient(UserId user){
-        recipients.remove(user);
+    UserId getSender(){
+        return sender;
     }
-    void sendFile(int transferId){
+
+
+    void removeRecipient(UserId user){
+        String username = user.getName();
+        if(recipients.remove(user))
+            server.event("User: " + username + " is removed from transfer: " + transferId);
+        else
+            server.event("Failure to remove: " + username + " from transfer: " + transferId);
+    }
+    void sendFile(int transferId, UserId user, ObjectOutputStream oos){
+        this.oos = oos;
         if(this.transferId != transferId){
             server.event("File transferID incorrect");
             return;
-
         }
+        ArrayList<UserId> recipient = new ArrayList<>();
+        recipient.add(user);
+        //server.sendFileTransfer(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, length, "", recipient, new UserId(0, "Server")));
+        server.sendFileInit(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
+        writeFile();
+        server.sendNull(user);
+    }
+    int getRecipientSize(){
+        return recipients.size();
     }
 
     /*

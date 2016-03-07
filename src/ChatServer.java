@@ -206,6 +206,48 @@ public class ChatServer {
     }
 
 
+    public synchronized void sendFileInit(ArrayList<UserId> recipients, ChatMessage cm){
+        if(sg == null)
+            System.out.print("Sending file initialization");
+        else
+            sg.appendRoom("Sending file initialization");
+
+        // we loop in reverse order in case we would have to remove a Client
+        for(int i = list.size()-1; i >= 0; --i) {
+            ClientThread ct = list.get(i);
+            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendFileInit group");
+            //Only send message if ct is the recipient
+            if(recipients.contains(new UserId(ct.id, ct.username))) {
+                System.out.println("Sending a fileTransferInit to client" + i);
+                // try to write to the Client, if it fails remove it from the list
+                if (!ct.writeMsg(cm)){
+                    removeThread(i);
+                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+                }
+            }
+        }
+
+    }
+
+    public synchronized void sendNull(UserId user) {
+        ChatMessage cMsg = new ChatMessage(10, "", new UserId(0, "Server"));
+        // we loop in reverse order in case we would have to remove a Client
+        for(int i = list.size()-1; i >= 0; --i) {
+            ClientThread ct = list.get(i);
+            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendNull group");
+            //Only send message if ct is in the recipients list
+            if(user.equals(new UserId(ct.id, ct.username))) {
+                System.out.println("Sending a null to client" + i);
+                // try to write to the Client, if it fails remove it from the list
+                if (!ct.writeMsg(cMsg)){
+                    removeThread(i);
+                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+                }
+            }
+        }
+    }
+
+
     private synchronized void removeThread(int index) {
         list.remove(index);
         for(int i = list.size()-1; i >= 0; --i) {
@@ -359,7 +401,7 @@ public class ChatServer {
 
                             }
                         }
-                        if(cm.getFileStatus() == ChatMessage.FILEDENY) {
+                        else if(cm.getFileStatus() == ChatMessage.FILEDENY) {
                             //Remove this user from recipient list
                             System.out.println("File Deny Received");
                             for(int i = 0; i < fileTransfers.size(); i++) {
@@ -377,6 +419,15 @@ public class ChatServer {
                                 }
                             }
 
+                        }
+                        else if(cm.getFileStatus() == ChatMessage.FILEACCEPT){
+                            System.out.println("File Accept Received");
+                            for(int i = 0; i < fileTransfers.size(); i++) {
+                                if (cm.getTransferId() == fileTransfers.get(i).getTransferId()) {
+                                    fileTransfers.get(i).sendFile(cm.getTransferId(), cm.getSender(), out);
+                                    break;
+                                }
+                            }
                         }
                         break;
                 }
@@ -401,6 +452,9 @@ public class ChatServer {
             try {
                 if(socket != null) socket.close();
             } catch (Exception e) {}
+            for(int i = fileTransfers.size()-1; i >= 0; i--) {
+                fileTransfers.remove(i);
+            }
         }
 
         //Write message to the Client output stream
