@@ -23,6 +23,8 @@ public class ChatServer {
     private static ArrayList<FileTransferHandler> fileTransfers;
     private SimpleDateFormat sdf;
 
+    private Object lock1 = new Object();
+
 
     public ChatServer(int port) {
         //open server with no GUI
@@ -57,7 +59,9 @@ public class ChatServer {
                 
                 //Create a new thread and handle the connection
                 ClientThread ct = new ClientThread(socket);
-                list.add(ct); //Save client to ArrayList
+                synchronized (lock1) {
+                    list.add(ct); //Save client to ArrayList
+                }
                 ct.start();
             }
             //when server stops
@@ -111,7 +115,6 @@ public class ChatServer {
     }
     
     //Broadcast a message to all Clients
-    //TODO: this will need to be changed to handle direct messaging
     private synchronized void broadcast(String message) {
        String time = sdf.format(new Date());
        
@@ -126,7 +129,7 @@ public class ChatServer {
             ClientThread ct = list.get(i);
            System.out.println("Sending a message to client" + i);
             // try to write to the Client if it fails remove it from the list
-            if(!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, null, new UserId(0, "Server")))) {
+            if(!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, null, new UserId(0, "Server"), new Date()))) {
                 removeThread(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
             }
@@ -161,7 +164,7 @@ public class ChatServer {
                 recipients2.remove(new UserId(ct.id, ct.username));
                 recipients2.add(cm.getSender());
                 // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, recipients2, cm.getSender()))) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, recipients2, cm.getSender(), new Date()))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
@@ -230,7 +233,7 @@ public class ChatServer {
     }
 
     public synchronized void sendNull(UserId user) {
-        ChatMessage cMsg = new ChatMessage(10, "", new UserId(0, "Server"));
+        ChatMessage cMsg = new ChatMessage(10, "", new UserId(0, "Server"), new Date());
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
@@ -249,7 +252,9 @@ public class ChatServer {
 
 
     private synchronized void removeThread(int index) {
-        list.remove(index);
+        synchronized (lock1) {
+            list.remove(index);
+        }
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
             whoIsIn(ct);
@@ -257,7 +262,7 @@ public class ChatServer {
     }
 
     private synchronized void whoIsIn(ClientThread thread) {
-        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server")));
+        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server"), new Date()));
         // scan all the users connected
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
@@ -269,7 +274,7 @@ public class ChatServer {
                 thread.writeUser(ct.username, ct.id, false);
 
         }
-        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "", null, new UserId(0, "Server")));
+        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "", null, new UserId(0, "Server"), new Date()));
 
 
     }
@@ -409,7 +414,7 @@ public class ChatServer {
                                     fileTransfers.get(i).removeRecipient(cm.getSender());
                                     ArrayList<UserId> recipient = new ArrayList<UserId>();
                                     recipient.add(fileTransfers.get(i).getSender());
-                                    multicast(new ChatMessage(ChatMessage.MESSAGE, "User: " + cm.getSender().getId() + " " + cm.getSender().getName() + " has denied the file transfer request", recipient, new UserId(0, "Server"))
+                                    multicast(new ChatMessage(ChatMessage.MESSAGE, "User: " + cm.getSender().getId() + " " + cm.getSender().getName() + " has denied the file transfer request", recipient, new UserId(0, "Server"), new Date())
                                             , "Server", 0);
                                     if(fileTransfers.get(i).getRecipientSize() <= 0){
                                         event("Closing filetransfer: " + fileTransfers.get(i).getTransferId());
