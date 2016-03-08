@@ -164,7 +164,13 @@ public class ChatServer {
                 recipients2.remove(new UserId(ct.id, ct.username));
                 recipients2.add(cm.getSender());
                 // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, message, recipients2, cm.getSender(), new Date()))) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients2, cm.getSender(), new Date()))) {
+                    removeThread(i);
+                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
+                }
+            }
+            else if(ct.id == id) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients, cm.getSender(), new Date()))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
