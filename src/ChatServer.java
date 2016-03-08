@@ -268,7 +268,7 @@ public class ChatServer {
     }
 
     private synchronized void whoIsIn(ClientThread thread) {
-        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()) + "\n", null, new UserId(0, "Server"), new Date()));
+        thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()), null, new UserId(0, "Server"), new Date()));
         // scan all the users connected
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
