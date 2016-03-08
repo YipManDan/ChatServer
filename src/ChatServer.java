@@ -59,10 +59,13 @@ public class ChatServer {
                 
                 //Create a new thread and handle the connection
                 ClientThread ct = new ClientThread(socket);
-                synchronized (lock1) {
-                    list.add(ct); //Save client to ArrayList
+                //ct.start();
+                if(ct.checkUsername()) {
+                    synchronized (lock1) {
+                        list.add(ct); //Save client to ArrayList
+                    }
+                    ct.start();
                 }
-                ct.start();
             }
             //when server stops
             try
@@ -346,7 +349,7 @@ public class ChatServer {
                 in  = new ObjectInputStream(is);
                 // read the username
                 username = (String) in.readObject();
-                event(username + " has connected");
+                //event(username + " has connected");
                 
             } catch (IOException e) {
                 event("Exception creating new Input/output Streams: " + e);
@@ -355,6 +358,19 @@ public class ChatServer {
 
             date = new Date().toString() + "\n";
 
+        }
+
+        public boolean checkUsername() throws ClassNotFoundException, IOException {
+            for(ClientThread cthread : list) {
+                if(cthread.username.equals(username)) {
+                    out.writeObject(new ChatMessage(ChatMessage.LOGOUT, "Username is already in use, please select another username", new UserId(0, "Server"), new Date()));
+                    close();
+                    return false;
+                }
+            }
+
+            event(username + " has connected");
+            return true;
         }
 
         @Override
