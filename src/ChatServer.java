@@ -21,10 +21,11 @@ public class ChatServer {
    
     private static ArrayList<ClientThread> list; //Keep track of clients
     private static ArrayList<FileTransferHandler> fileTransfers;
+    private static ArrayList<UserHistory> userHistories;
     private SimpleDateFormat sdf;
 
     private Object lock1 = new Object();
-
+    private Object lock2 = new Object();
 
     public ChatServer(int port) {
         //open server with no GUI
@@ -38,6 +39,7 @@ public class ChatServer {
         sdf = new SimpleDateFormat("HH:mm:ss");
         list = new ArrayList<>();
         fileTransfers = new ArrayList<>();
+        userHistories = new ArrayList<>();
         uniqueID=1;
         transferID=1;
     }
@@ -302,6 +304,46 @@ public class ChatServer {
         }
     }
 
+    void saveHistory(UserHistory history) {
+        event("Saving history: " + history.getUsername() + " of size: " + history.getChatrooms().size());
+        String username = history.getUsername();
+        synchronized (lock2) {
+            for (UserHistory t : userHistories) {
+                if (t.getUsername().equals(username)) {
+                    userHistories.remove(t);
+                    break;
+                }
+            }
+            userHistories.add(history);
+        }
+    }
+
+    Boolean findHistory(String username, ObjectOutputStream out) {
+        synchronized (lock2) {
+            for (UserHistory t : userHistories) {
+                if (t.getUsername().equals(username)) {
+                    try {
+                        out.writeObject(t);
+                        event("Found history of size: " + t.getChatrooms().size());
+                    }
+                    catch (IOException e) {
+                        event("Error writing userHistory" + e.getMessage());
+                    }
+                    return true;
+                }
+            }
+        }
+        UserHistory history = new UserHistory(username);
+        try {
+            out.writeObject(history);
+        }
+        catch (IOException e) {
+            event("Error writing userHistory" + e.getMessage());
+        }
+
+        return false;
+    }
+
     ChatServer getServer(){
         return this;
     }
@@ -363,6 +405,13 @@ public class ChatServer {
         public boolean checkUsername() throws ClassNotFoundException, IOException {
             for(ClientThread cthread : list) {
                 if(cthread.username.equals(username)) {
+                    UserHistory history = new UserHistory(username);
+                    try {
+                        out.writeObject(history);
+                    }
+                    catch (IOException e) {
+                        event("Error writing userHistory" + e.getMessage());
+                    }
                     out.writeObject(new ChatMessage(ChatMessage.LOGOUT, "Username is already in use, please select another username", new UserId(0, "Server"), new Date()));
                     close();
                     return false;
@@ -375,6 +424,9 @@ public class ChatServer {
 
         @Override
         public void run() {
+            if(findHistory(username, out)) {
+                event("History of " + username + " found!");
+            }
             //Update user list of all users
             for(int i = list.size()-1; i >= 0; --i) {
                 ClientThread ct = list.get(i);
@@ -407,6 +459,20 @@ public class ChatServer {
                         break;
                     case ChatMessage.LOGOUT:
                         event(username + " disconnected with a LOGOUT message.");
+                        System.out.println("Logging out");
+                        //get user's history
+                        UserHistory history;
+                        try {
+                            history = (UserHistory) in.readObject();
+                        } catch (IOException e) {
+                            event(username + " Exception reading Streams: " + e);
+                            break;
+                        } catch(ClassNotFoundException e2) {
+                            break;
+                        }
+                        if(history != null)
+                            saveHistory(history);
+
                         loggedIn = false;
                         break;
                     case ChatMessage.WHOISIN:
