@@ -11,27 +11,35 @@ import java.text.SimpleDateFormat;
  */
 
 public class ChatServer {
+    //Attaches a unique ID to all users
     private static int uniqueID;
+    //Attaches a unique transferID to all file transfers
     private static int transferID;
+
     private static ServerSocket serverSocket;
     private static int port = 8080; //default port number is 8080
     boolean continueServer = true;
 
+    //GUI of server
     private ServerGUI sg;
    
     private static ArrayList<ClientThread> list; //Keep track of clients
-    private static ArrayList<FileTransferHandler> fileTransfers;
-    private static ArrayList<UserHistory> userHistories;
+    private static ArrayList<FileTransferHandler> fileTransfers; //Keep track of file transfers
+    private static ArrayList<UserHistory> userHistories; //Maintain a chat history for each user
+
     private SimpleDateFormat sdf;
 
+    //Locks
     private Object lock1 = new Object();
     private Object lock2 = new Object();
 
+    //Constructor with no GUI
     public ChatServer(int port) {
         //open server with no GUI
         this(port, null);
     }
 
+    //Constructor with GUI
     public ChatServer(int port, ServerGUI sg) {
         //GUI or not
         this.sg = sg;
