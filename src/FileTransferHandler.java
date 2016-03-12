@@ -1,5 +1,4 @@
 import java.io.*;
-import java.net.Socket;
 import java.util.ArrayList;
 
 /**
@@ -11,7 +10,6 @@ public class FileTransferHandler {
     private ArrayList<UserId> recipients;
     private ChatMessage cMsg;
     private int transferId;
-    ChatServer.ClientThread ct;
     ChatServer server;
 
     long length;
@@ -22,10 +20,8 @@ public class FileTransferHandler {
     FileInputStream fis = null;
     BufferedOutputStream bos = null;
     BufferedInputStream bis = null;
-    //InputStream is;
     ObjectInputStream ois;
     ObjectOutputStream oos;
-    Socket socket;
     File tempFile;
 
 
@@ -33,10 +29,6 @@ public class FileTransferHandler {
         this.cMsg = cMsg;
         this.transferId = transferId;
         this.recipients = cMsg.getRecipients();
-        //this.ct = ct;
-        //socket = ct.socket;
-        //this.socket = socket;
-        //this.is = is;
         this.ois = ois;
         this.server = server;
         length = cMsg.getFileSize();
@@ -52,7 +44,6 @@ public class FileTransferHandler {
         server.event("Starting file transfer to server");
         try {
             byte [] mybytearray = new byte [((int) length)];
-            //is = socket.getInputStream();
             tempFile = File.createTempFile("tmp", null, null);
             tempFile.deleteOnExit();
             fos = new FileOutputStream(tempFile);
@@ -63,20 +54,8 @@ public class FileTransferHandler {
             catch (ClassNotFoundException e){
                 server.event("In reading file object:" + e.getMessage());
             }
-            //bytesRead = is.read(mybytearray, 0, mybytearray.length);
-            //current = 0;
             current = bytesRead;
             current = (int)length;
-            /*
-            do {
-                bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
-                if(bytesRead >= 0)
-                    current += bytesRead;
-                server.event("File progress: " + current + " of " + length);
-            } while (current < length);
-            //} while (is.available() > 0);
-            */
-
 
             bos.write(mybytearray, 0, current);
             bos.flush();
@@ -111,11 +90,6 @@ public class FileTransferHandler {
             fis = new FileInputStream(tempFile);
             bis = new BufferedInputStream(fis);
             bis.read(mybytearray, 0, mybytearray.length);
-            /*
-            os = socket.getOutputStream();
-            os.write(mybytearray, 0, mybytearray.length);
-            os.flush();
-            */
             oos.writeObject(mybytearray);
             server.event("File Sent");
         }
@@ -130,15 +104,6 @@ public class FileTransferHandler {
                 catch (IOException e2){
                 }
             }
-            /*
-            if(os != null) {
-                try {
-                    os.close();
-                }
-                catch (IOException e3){
-                }
-            }
-            */
         }
 
     }
@@ -177,7 +142,6 @@ public class FileTransferHandler {
         }
         ArrayList<UserId> recipient = new ArrayList<>();
         recipient.add(user);
-        //server.sendFileInit(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
         server.sendFileTransfer(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
         writeFile();
         server.sendNull(user);
@@ -185,10 +149,4 @@ public class FileTransferHandler {
     int getRecipientSize(){
         return recipients.size();
     }
-
-    /*
-    InputStream getIs(){
-        return is;
-    }
-    */
 }

@@ -162,6 +162,9 @@ public class ChatServer {
     private synchronized void multicast(ChatMessage cm, String username, int id) {
         ArrayList<UserId> recipients = cm.getRecipients();
         String time = sdf.format(new Date());
+        Date date = new Date();
+
+        System.out.println("A message was received from: " + cm.getSender().getName() + " " + cm.getSender().getId());
 
         //Display message in Server chatroom
         String message = time + ": " + username + ": " + cm.getMessage();
@@ -183,14 +186,14 @@ public class ChatServer {
                 recipients2.add(cm.getSender());
 
                 // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients2, cm.getSender(), new Date()))) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients2, cm.getSender(), date))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
             }
             //Return message to sender (This ensures that ordering is consistent)
             else if(ct.id == id) {
-                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients, cm.getSender(), new Date()))) {
+                if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients, cm.getSender(), date))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
@@ -208,6 +211,7 @@ public class ChatServer {
 
             //Only send message if ct is in the recipients list
             if(recipients.contains(new UserId(ct.id, ct.username))) {
+                System.out.println("A user was found");
 
                 // try to write to the Client, if it fails remove it from the list
                 if (!ct.writeMsg(cm)){
@@ -526,6 +530,11 @@ public class ChatServer {
                                 if (cm.getTransferId() == fileTransfers.get(i).getTransferId()) {
                                     fileTransfers.get(i).sendFile(cm.getTransferId(), cm.getSender(), out);
 
+                                    ArrayList<UserId> recipient = new ArrayList<>();
+                                    recipient.add(fileTransfers.get(i).getSender());
+                                    multicast(new ChatMessage(ChatMessage.MESSAGE, "User: " + cm.getSender().getId() + " " + cm.getSender().getName() + " has received the file", recipient, new UserId(0, "Server"), new Date())
+                                            , "Server", 0);
+
                                     //Remove user from filetransfer recipient list
                                     fileTransfers.get(i).removeRecipient(cm.getSender());
 
@@ -585,6 +594,7 @@ public class ChatServer {
             
             return true;
         }
+        //Send user info to a client
         private boolean writeUser(String msg, int userID, boolean isReceiver) {
             // if Client is still connected send the message to it
             if (!socket.isConnected()) {
