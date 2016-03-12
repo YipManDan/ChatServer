@@ -198,6 +198,7 @@ public class ChatServer {
         }
     }
 
+    //Send multicasted file information
     public synchronized void sendFileTransfer(ArrayList<UserId> recipients, ChatMessage cm){
         event("Sending file transfer message: " + cm.getTransferId());
 
@@ -218,15 +219,17 @@ public class ChatServer {
 
     }
 
+    //Send a null message to a user, this allows the user to clear out the buffer stream
     public synchronized void sendNull(UserId user) {
         ChatMessage cMsg = new ChatMessage(10, "", new UserId(0, "Server"), new Date());
+
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
-            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendNull group");
+
             //Only send message if ct is in the recipients list
             if(user.equals(new UserId(ct.id, ct.username))) {
-                System.out.println("Sending a null to client" + i);
+
                 // try to write to the Client, if it fails remove it from the list
                 if (!ct.writeMsg(cMsg)){
                     removeThread(i);
@@ -237,7 +240,9 @@ public class ChatServer {
     }
 
 
+    //Function removes thread from ClientThread list and then updates all client's user list
     private synchronized void removeThread(int index) {
+        //lock list before modifying
         synchronized (lock1) {
             list.remove(index);
         }
@@ -247,30 +252,32 @@ public class ChatServer {
         }
     }
 
+    //Updates a client's userlist
     private synchronized void whoIsIn(ClientThread thread) {
         thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "List of the users connected at " + sdf.format(new Date()), null, new UserId(0, "Server"), new Date()));
+
         // scan all the users connected
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
-            //writeMsg(ChatMessage.WHOISIN, (i + 1) + ") " + ct.username + " since " + ct.date);
-            if(ct.id == thread.id) {
+
+            if(ct.id == thread.id)
                 thread.writeUser(ct.username, ct.id, true);
-            }
             else
                 thread.writeUser(ct.username, ct.id, false);
-
         }
+        //send an empty message to end
         thread.writeMsg(new ChatMessage(ChatMessage.MESSAGE, "", null, new UserId(0, "Server"), new Date()));
 
 
     }
 
 
-    // for a client who logoff using the LOGOUT message
+    //removes a client from ClientThread
     synchronized void remove(int id) {
         // scan the array list until we found the Id
         for(int i = 0; i < list.size(); ++i) {
             ClientThread ct = list.get(i);
+
             if(ct.id == id) {
                 removeThread(i);
                 event("Disconnected Client" + i + " : " + ct.username + " removed from list");
@@ -279,10 +286,15 @@ public class ChatServer {
         }
     }
 
+    //Saves a user's chat history
     void saveHistory(UserHistory history) {
         event("Saving history: " + history.getUsername() + " of size: " + history.getChatrooms().size());
         String username = history.getUsername();
+
+        //lock the history list before saving to it
         synchronized (lock2) {
+
+            //Erases a user's previously saved history if exists
             for (UserHistory t : userHistories) {
                 if (t.getUsername().equals(username)) {
                     userHistories.remove(t);
@@ -293,10 +305,14 @@ public class ChatServer {
         }
     }
 
+    //Check if a user has a chathistory and sends history to user
     Boolean findHistory(String username, ObjectOutputStream out) {
+        //Lock history list before accessing
         synchronized (lock2) {
+
             for (UserHistory t : userHistories) {
                 if (t.getUsername().equals(username)) {
+                    //write userHistory to output stream
                     try {
                         out.writeObject(t);
                         event("Found history of size: " + t.getChatrooms().size());
@@ -308,6 +324,8 @@ public class ChatServer {
                 }
             }
         }
+
+        //If history not found, an empty history is sent to client
         UserHistory history = new UserHistory(username);
         try {
             out.writeObject(history);
@@ -315,7 +333,6 @@ public class ChatServer {
         catch (IOException e) {
             event("Error writing userHistory" + e.getMessage());
         }
-
         return false;
     }
 
