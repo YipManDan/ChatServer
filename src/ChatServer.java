@@ -41,36 +41,45 @@ public class ChatServer {
 
     //Constructor with GUI
     public ChatServer(int port, ServerGUI sg) {
-        //GUI or not
         this.sg = sg;
         this.port = port;
+
         sdf = new SimpleDateFormat("HH:mm:ss");
+
         list = new ArrayList<>();
         fileTransfers = new ArrayList<>();
         userHistories = new ArrayList<>();
+
+        //Set initial values of the ID's
         uniqueID=1;
         transferID=1;
     }
     
     public void start() {
         try {
-            serverSocket = new ServerSocket(port); //Start listening on port
-            
+            //Start listening on port
+            serverSocket = new ServerSocket(port);
+
+            //Inform user that Server is starting
             event("Web Server running on Inet Address " + serverSocket.getInetAddress()
                     + " port " + serverSocket.getLocalPort());
             
-            //System.out.println("Working Directory: \"" + System.getProperty("user.dir").replace('\\', '/') + "\"");
 
             //Server infinite loop and wait for clients to connect
             while (continueServer) {
-                
-                Socket socket = serverSocket.accept(); //accept client connection
+
+                //accept client connection
+                Socket socket = serverSocket.accept();
+
+                //Inform user when a connection is accepted
                 event("Connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
                 
                 //Create a new thread and handle the connection
                 ClientThread ct = new ClientThread(socket);
-                //ct.start();
+
+                //Checks to see if a user is already logged in
                 if(ct.checkUsername()) {
+                    //Lock list of clients before adding to list
                     synchronized (lock1) {
                         list.add(ct); //Save client to ArrayList
                     }
@@ -118,6 +127,7 @@ public class ChatServer {
         }
     }
 
+    //If GUI available, append message to textfield, else System.out
     public void event(String msg)
     {
         String time = sdf.format(new Date())+ " " + msg;
@@ -151,37 +161,34 @@ public class ChatServer {
     //Send a message to all clients in recipients list
     private synchronized void multicast(ChatMessage cm, String username, int id) {
         ArrayList<UserId> recipients = cm.getRecipients();
-        UserId user;
         String time = sdf.format(new Date());
-        //Add time and sender to message
+
+        //Display message in Server chatroom
         String message = time + ": " + username + ": " + cm.getMessage();
         if(sg == null)
             System.out.print(message);
         else
             sg.appendRoom(message);
 
-        //TODO: Remove this
-        for(int i = 0; i < recipients.size(); i++) {
-            System.out.println("In multicast list: " + recipients.get(i).getName() + " " + recipients.get(i).getId());
-        }
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
-            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in multicast group");
             //Only send message if ct is in the recipients list
             if(recipients.contains(new UserId(ct.id, ct.username))) {
-                System.out.println("Sending a message to client" + i);
+
                 //Arraylist of UserId to inform client who is in chatroom
                 ArrayList<UserId> recipients2 = new ArrayList<>();
                 recipients2.addAll(cm.getRecipients());
                 recipients2.remove(new UserId(ct.id, ct.username));
                 recipients2.add(cm.getSender());
+
                 // try to write to the Client, if it fails remove it from the list
                 if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients2, cm.getSender(), new Date()))) {
                     removeThread(i);
                     event("Disconnected Client" + i + " : " + ct.username + " removed from list");
                 }
             }
+            //Return message to sender (This ensures that ordering is consistent)
             else if(ct.id == id) {
                 if (!ct.writeMsg(new ChatMessage(ChatMessage.MESSAGE, cm.getMessage(), recipients, cm.getSender(), new Date()))) {
                     removeThread(i);
@@ -192,55 +199,15 @@ public class ChatServer {
     }
 
     public synchronized void sendFileTransfer(ArrayList<UserId> recipients, ChatMessage cm){
-        UserId user;
-        //String time = sdf.format(new Date());
-        //Add time and sender to message
-        //String message = time + ": " + username + ": " + cm.getMessage();
-        if(sg == null)
-            System.out.print("Sending file transfer requests");
-        else
-            sg.appendRoom("Sending file transfer requests");
+        event("Sending file transfer message: " + cm.getTransferId());
 
-        //TODO: Remove this
-        for(int i = 0; i < recipients.size(); i++) {
-            System.out.println("In sendFileTransfer list: " + recipients.get(i).getName() + " " + recipients.get(i).getId());
-        }
         // we loop in reverse order in case we would have to remove a Client
         for(int i = list.size()-1; i >= 0; --i) {
             ClientThread ct = list.get(i);
-            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendFileTransfer group");
+
             //Only send message if ct is in the recipients list
             if(recipients.contains(new UserId(ct.id, ct.username))) {
-                System.out.println("Sending a fileTransferRequest to client" + i);
-                //Arraylist of UserId to inform client who is in chatroom
-                ArrayList<UserId> recipients2 = new ArrayList<>();
-                recipients2.addAll(cm.getRecipients());
-                recipients2.remove(new UserId(ct.id, ct.username));
-                recipients2.add(cm.getSender());
-                // try to write to the Client, if it fails remove it from the list
-                if (!ct.writeMsg(cm)){
-                    removeThread(i);
-                    event("Disconnected Client" + i + " : " + ct.username + " removed from list");
-                }
-            }
-        }
 
-    }
-
-
-    public synchronized void sendFileInit(ArrayList<UserId> recipients, ChatMessage cm){
-        if(sg == null)
-            System.out.print("Sending file initialization");
-        else
-            sg.appendRoom("Sending file initialization");
-
-        // we loop in reverse order in case we would have to remove a Client
-        for(int i = list.size()-1; i >= 0; --i) {
-            ClientThread ct = list.get(i);
-            System.out.println("Checking if user " + ct.username + " " + ct.id + " is in sendFileInit group");
-            //Only send message if ct is the recipient
-            if(recipients.contains(new UserId(ct.id, ct.username))) {
-                System.out.println("Sending a fileTransferInit to client" + i);
                 // try to write to the Client, if it fails remove it from the list
                 if (!ct.writeMsg(cm)){
                     removeThread(i);

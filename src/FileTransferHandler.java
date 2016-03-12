@@ -177,8 +177,8 @@ public class FileTransferHandler {
         }
         ArrayList<UserId> recipient = new ArrayList<>();
         recipient.add(user);
-        //server.sendFileTransfer(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, length, "", recipient, new UserId(0, "Server")));
-        server.sendFileInit(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
+        //server.sendFileInit(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
+        server.sendFileTransfer(recipient, new ChatMessage(ChatMessage.FILE, ChatMessage.FILEACCEPT, transferId, 0, "", new UserId(0, "Server")));
         writeFile();
         server.sendNull(user);
     }
