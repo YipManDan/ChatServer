@@ -361,8 +361,7 @@ public class ChatServer {
         Socket socket;
         ObjectInputStream in;
         ObjectOutputStream out;
-        InputStream is;
-        
+
         int id; //Unique ID (easier for deconnection)
         String username; //Client username
         
@@ -379,12 +378,10 @@ public class ChatServer {
             //Create both Data Stream
             try {
                 out = new ObjectOutputStream(socket.getOutputStream());
-                is = socket.getInputStream();
-                in  = new ObjectInputStream(is);
+                in  = new ObjectInputStream(socket.getInputStream());
                 // read the username
                 username = (String) in.readObject();
-                //event(username + " has connected");
-                
+
             } catch (IOException e) {
                 event("Exception creating new Input/output Streams: " + e);
                 return;
@@ -394,16 +391,20 @@ public class ChatServer {
 
         }
 
+        //checks to see if user is already logged in
         public boolean checkUsername() throws ClassNotFoundException, IOException {
             for(ClientThread cthread : list) {
+
                 if(cthread.username.equals(username)) {
                     UserHistory history = new UserHistory(username);
+
                     try {
                         out.writeObject(history);
                     }
                     catch (IOException e) {
                         event("Error writing userHistory" + e.getMessage());
                     }
+                    //if user is logged in, prevent user from logging in again
                     out.writeObject(new ChatMessage(ChatMessage.LOGOUT, "Username is already in use, please select another username", new UserId(0, "Server"), new Date()));
                     close();
                     return false;
@@ -416,18 +417,21 @@ public class ChatServer {
 
         @Override
         public void run() {
+            //Send chatHistory
             if(findHistory(username, out)) {
                 event("History of " + username + " found!");
             }
+
             //Update user list of all users
             for(int i = list.size()-1; i >= 0; --i) {
                 ClientThread ct = list.get(i);
                 whoIsIn(ct);
             }
+
             boolean loggedIn = true;
             //Keep running until LOGOUT
             while(loggedIn) {
-                // read a String (which is an object)
+                // read a ChatMessage (which is an object)
                 try {
                     cm = (ChatMessage) in.readObject();
                 } catch (IOException e) {
@@ -436,22 +440,24 @@ public class ChatServer {
                 } catch(ClassNotFoundException e2) {
                     break;
                 }
-                // the messaage part of the ChatMessage
+
+                // the message part of the ChatMessage
                 String message = cm.getMessage();
 
                 // Switch on the type of message receive
                 switch(cm.getType()) {
 
                     case ChatMessage.MESSAGE:
-                        System.out.println("Message received from " + username);
+                        //Check to see if message is a broadcast or multicast/singlecast
                         if(cm.getRecipients().size()==0)
                             broadcast(username + ": " + message);
                         else
                             multicast(cm, username, id);
                         break;
+
                     case ChatMessage.LOGOUT:
                         event(username + " disconnected with a LOGOUT message.");
-                        System.out.println("Logging out");
+
                         //get user's history
                         UserHistory history;
                         try {
@@ -467,16 +473,22 @@ public class ChatServer {
 
                         loggedIn = false;
                         break;
+
                     case ChatMessage.WHOISIN:
                         System.out.println("WHOISIN received from " + username);
                         whoIsIn(this);
                         break;
+
                     case ChatMessage.FILE:
                         if (cm.getFileStatus() == ChatMessage.FILESEND) {
-                            System.out.println("FILE transfer initiated from " + username);
                             FileTransferHandler newFTH = new FileTransferHandler(cm, transferID, in, getServer());
+
+                            //store filetransfer in arraylist
                             fileTransfers.add(newFTH);
+                            //increment transferID so it remains unique
+                            //TODO: eventually transferID may loop back, handle this (Check uniqueness?)
                             transferID++;
+
                             try{
                                 in.readObject();
                             }
@@ -487,15 +499,19 @@ public class ChatServer {
                             }
                         }
                         else if(cm.getFileStatus() == ChatMessage.FILEDENY) {
+
                             //Remove this user from recipient list
-                            System.out.println("File Deny Received");
                             for(int i = 0; i < fileTransfers.size(); i++) {
                                 if(cm.getTransferId() == fileTransfers.get(i).getTransferId()) {
                                     fileTransfers.get(i).removeRecipient(cm.getSender());
-                                    ArrayList<UserId> recipient = new ArrayList<UserId>();
+
+                                    //Inform file sender that file denied
+                                    ArrayList<UserId> recipient = new ArrayList<>();
                                     recipient.add(fileTransfers.get(i).getSender());
                                     multicast(new ChatMessage(ChatMessage.MESSAGE, "User: " + cm.getSender().getId() + " " + cm.getSender().getName() + " has denied the file transfer request", recipient, new UserId(0, "Server"), new Date())
                                             , "Server", 0);
+
+                                    //Close filetransfer if user count drops to 0
                                     if(fileTransfers.get(i).getRecipientSize() <= 0){
                                         event("Closing filetransfer: " + fileTransfers.get(i).getTransferId());
                                         fileTransfers.remove(i);
@@ -506,10 +522,18 @@ public class ChatServer {
 
                         }
                         else if(cm.getFileStatus() == ChatMessage.FILEACCEPT){
-                            System.out.println("File Accept Received");
                             for(int i = 0; i < fileTransfers.size(); i++) {
                                 if (cm.getTransferId() == fileTransfers.get(i).getTransferId()) {
                                     fileTransfers.get(i).sendFile(cm.getTransferId(), cm.getSender(), out);
+
+                                    //Remove user from filetransfer recipient list
+                                    fileTransfers.get(i).removeRecipient(cm.getSender());
+
+                                    //Close filetransfer if user count drops to 0
+                                    if(fileTransfers.get(i).getRecipientSize() <= 0){
+                                        event("Closing filetransfer: " + fileTransfers.get(i).getTransferId());
+                                        fileTransfers.remove(i);
+                                    }
                                     break;
                                 }
                             }
@@ -549,8 +573,6 @@ public class ChatServer {
                 close();
                 return false;
             }
-            //ChatMessage cMsg = new ChatMessage(type, msg, recipients, sender);
-            event("User info: " + cMsg.getSender().getId() + " " + cMsg.getSender().getName());
 
             // write the message to the stream
             try {
